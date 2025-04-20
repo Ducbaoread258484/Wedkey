@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin & User Panel</title>
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #f4f9f9;
+      padding: 20px;
+    }
+    .hidden { display: none; }
+    input, button {
+      margin: 5px 0;
+      padding: 5px 10px;
+      display: block;
+    }
+    .top-bar {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <p id="welcomeUser"></p>
+    <button id="logoutBtn" class="hidden" onclick="logout()">Đăng xuất</button>
+  </div>
+
+  <!-- Đăng nhập -->
+  <div id="loginPage">
+    <h2>Đăng nhập</h2>
+    <input id="loginUsername" placeholder="Tài khoản">
+    <input id="loginPassword" type="password" placeholder="Mật khẩu">
+    <button onclick="login()">Đăng nhập</button>
+    <p>Chưa có tài khoản? <a href="#" onclick="showRegister()">Đăng ký</a></p>
+  </div>
+
+  <!-- Đăng ký -->
+  <div id="registerPage" class="hidden">
+    <h2>Đăng ký</h2>
+    <input id="regUsername" placeholder="Tài khoản">
+    <input id="regPassword" type="password" placeholder="Mật khẩu">
+    <button onclick="register()">Tạo tài khoản</button>
+    <p>Đã có tài khoản? <a href="#" onclick="showLogin()">Đăng nhập</a></p>
+  </div>
+
+  <!-- Giao diện User -->
+  <div id="userPanel" class="hidden">
+    <h2>Chào mừng User</h2>
+    <div id="keyArea">
+      <p>Nhập Key của bạn</p>
+      <input id="userKeyInput" placeholder="dán key tại đây...">
+      <button onclick="checkKey()">Xác nhận</button>
+    </div>
+    <p id="keyStatus" style="color: green;"></p>
+  </div>
+
+  <!-- Giao diện Admin -->
+  <div id="adminPanel" class="hidden">
+    <h2>Admin Dashboard</h2>
+    <p>Tạo Key mới</p>
+    <input id="newKeyInput" placeholder="Nhập key...">
+    <button onclick="createKey()">Tạo Key</button>
+    <h3>Danh sách Key đã tạo</h3>
+    <ul id="keyList"></ul>
+  </div>
+
+  <script>
+    // Load từ localStorage
+    let users = JSON.parse(localStorage.getItem("users")) || [
+      { username: "admin", password: "admin", isAdmin: true }
+    ];
+    let keys = JSON.parse(localStorage.getItem("keys")) || [];
+    let currentUser = JSON.parse(localStorage.getItem("currentUser")) || null;
+
+    function saveData() {
+      localStorage.setItem("users", JSON.stringify(users));
+      localStorage.setItem("keys", JSON.stringify(keys));
+      localStorage.setItem("currentUser", JSON.stringify(currentUser));
+    }
+
+    function renderPage() {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("registerPage").classList.add("hidden");
+      document.getElementById("userPanel").classList.add("hidden");
+      document.getElementById("adminPanel").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+
+      if (currentUser) {
+        document.getElementById("welcomeUser").innerText = `Xin chào, ${currentUser.username}`;
+        if (currentUser.isAdmin) {
+          document.getElementById("adminPanel").classList.remove("hidden");
+          renderKeys();
+        } else {
+          document.getElementById("userPanel").classList.remove("hidden");
+          if (currentUser.keyVerified) {
+            document.getElementById("keyArea").classList.add("hidden");
+            document.getElementById("keyStatus").innerText = "Bạn đã xác minh key!";
+          }
+        }
+      } else {
+        document.getElementById("logoutBtn").classList.add("hidden");
+        showLogin();
+      }
+    }
+
+    function register() {
+      const user = document.getElementById("regUsername").value;
+      const pass = document.getElementById("regPassword").value;
+      if (!user || !pass) return alert("Vui lòng nhập đủ thông tin!");
+      if (users.find(u => u.username === user)) return alert("Tài khoản đã tồn tại!");
+      users.push({ username: user, password: pass, isAdmin: false });
+      saveData();
+      alert("Đăng ký thành công!");
+      showLogin();
+    }
+
+    function login() {
+      const user = document.getElementById("loginUsername").value;
+      const pass = document.getElementById("loginPassword").value;
+      const found = users.find(u => u.username === user && u.password === pass);
+      if (!found) return alert("Sai tài khoản hoặc mật khẩu!");
+      currentUser = found;
+      saveData();
+      renderPage();
+    }
+
+    function logout() {
+      currentUser = null;
+      saveData();
+      document.getElementById("welcomeUser").innerText = "";
+      renderPage();
+    }
+
+    function showRegister() {
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("registerPage").classList.remove("hidden");
+    }
+
+    function showLogin() {
+      document.getElementById("registerPage").classList.add("hidden");
+      document.getElementById("loginPage").classList.remove("hidden");
+    }
+
+    function createKey() {
+      const newKey = document.getElementById("newKeyInput").value.trim();
+      if (!newKey) return alert("Vui lòng nhập key!");
+      if (keys.includes(newKey)) return alert("Key đã tồn tại!");
+      keys.push(newKey);
+      document.getElementById("newKeyInput").value = "";
+      saveData();
+      renderKeys();
+    }
+
+    function renderKeys() {
+      const keyList = document.getElementById("keyList");
+      keyList.innerHTML = "";
+      keys.forEach((k, i) => {
+        const li = document.createElement("li");
+        li.innerText = k + " ";
+        const btn = document.createElement("button");
+        btn.innerText = "Xóa";
+        btn.onclick = () => {
+          keys.splice(i, 1);
+          saveData();
+          renderKeys();
+        };
+        li.appendChild(btn);
+        keyList.appendChild(li);
+      });
+    }
+
+    function checkKey() {
+      const userKey = document.getElementById("userKeyInput").value.trim();
+      if (keys.includes(userKey)) {
+        alert("Key hợp lệ!");
+        currentUser.keyVerified = true;
+        saveData();
+        renderPage();
+      } else {
+        alert("Key không hợp lệ!");
+      }
+    }
+
+    // Tự động load lại nếu đã login
+    renderPage();
+  </script>
+</body>
+</html>
