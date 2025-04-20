@@ -55,7 +55,11 @@ if (!adminExists) {
   localStorage.setItem("users", JSON.stringify(users));
 }
     // Đảm bảo luôn có tài khoản admin/admin
-    
+   const adminExists = users.some(u => u.username === "admin");
+if (!adminExists) {
+  users.push({ username: "admin", password: "ducbao123", isAdmin: true });
+  localStorage.setItem("users", JSON.stringify(users));
+} 
 
     let keys = JSON.parse(localStorage.getItem("keys")) || [];
     let currentUser = null;
