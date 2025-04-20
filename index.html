@@ -49,12 +49,13 @@
   <script>
     // Lấy users từ localStorage hoặc khởi tạo
     let users = JSON.parse(localStorage.getItem("users")) || [];
-
+    const adminExists = users.some(u => u.username === "admin");
+if (!adminExists) {
+  users.push({ username: "admin", password: "admin", isAdmin: true });
+  localStorage.setItem("users", JSON.stringify(users));
+}
     // Đảm bảo luôn có tài khoản admin/admin
-    if (!users.find(u => u.username === "admin")) {
-      users.push({ username: "admin", password: "admin", isAdmin: true });
-      localStorage.setItem("users", JSON.stringify(users));
-    }
+    
 
     let keys = JSON.parse(localStorage.getItem("keys")) || [];
     let currentUser = null;
